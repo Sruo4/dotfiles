@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Secrets
+.zshrc.secrets
+
+# Backup files
+*.bak
+*.backup
+*~
