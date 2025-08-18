@@ -1,8 +1,8 @@
 # macOS
 .DS_Store
 
-# Secrets
-.zshrc.secrets
+# Local configs (not for git)
+.zshrc.local
 
 # Backup files
 *.bak

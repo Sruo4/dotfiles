@@ -7,12 +7,6 @@
 # 为现代终端设置256色支持
 export TERM=xterm-256color
 
-# 从一个独立、安全的文件加载私密环境变量 (如 API Keys)
-# 确保 ~/.zshrc.secrets 文件不被 Git 等版本控制工具追踪！
-if [[ -f ~/.zshrc.secrets ]]; then
-  source ~/.zshrc.secrets
-fi
-
 # ------------------------------------------------------------------------------
 # 2. Zsh 补全系统 (Completion System)
 # ------------------------------------------------------------------------------
@@ -89,6 +83,13 @@ fi
 if type brew &>/dev/null; then
   alias brewup='brew outdated --greedy | fzf -m --reverse | awk '"'"'{print $1}'"'"' | xargs brew upgrade'
 fi
+
+if type eza &>/dev/null; then
+  alias tree='eza -T'
+fi
+
+# 加载本地配置（如果有）
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
 # 'ls' 命令的平台适配别名和颜色
 case "$(uname -s)" in
