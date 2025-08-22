@@ -9,7 +9,12 @@ vim.opt.signcolumn = "yes"
 -- 编码和剪贴板设置
 vim.opt.encoding = "utf-8"
 vim.opt.fileencoding = "utf-8"
-vim.opt.clipboard = "unnamedplus"
+-- 安全设置剪贴板，避免在某些环境下的错误
+vim.schedule(function()
+  pcall(function()
+    vim.opt.clipboard = "unnamedplus"
+  end)
+end)
 
 -- 缩进设置
 vim.opt.expandtab = true
@@ -51,4 +56,3 @@ vim.opt.swapfile = false
 vim.opt.backup = false
 -- 启用持久撤销
 vim.opt.undofile = true
-
