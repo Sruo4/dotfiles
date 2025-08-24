@@ -10,10 +10,14 @@ return {
         vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Live grep' })
         vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Buffers' })
         vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Help' })
+        vim.keymap.set('n', '<leader>sw', function()
+            local word = vim.fn.expand('<cword>')
+            require('telescope.builtin').grep_string({ search = '\b' .. word .. '\b', use_regex = true })
+        end, { desc = 'Search word only' })
         
         require('telescope').setup({
             defaults = {
-                file_ignore_patterns = { "node_modules", ".git" },
+                file_ignore_patterns = { "node_modules", "%.git" },
                 preview = {
                     treesitter = false
                 }
