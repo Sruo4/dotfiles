@@ -24,11 +24,6 @@ compinit -i
 # 3. 工具初始化 (Tool Initializations)
 # ------------------------------------------------------------------------------
 
-# Starship: 跨平台的终端提示符
-if type starship &>/dev/null; then
-  eval "$(starship init zsh)"
-fi
-
 # zoxide: 更智能的 cd 命令
 if type zoxide &>/dev/null; then
   eval "$(zoxide init zsh)"
@@ -40,32 +35,40 @@ if type fnm &>/dev/null; then
   eval "$(fnm env --use-on-cd)"
 fi
 
-# zsh-syntax-highlighting: 命令语法高亮
-ZSH_SYNTAX_HIGHLIGHT_SCRIPT=""
-case "$(uname -s)" in
-  Darwin)
-    # macOS: 使用 brew --prefix 动态查找路径，自动兼容 Apple Silicon/Intel
-    if type brew &>/dev/null; then
-      local highlight_path
-      highlight_path="$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-      if [[ -f "$highlight_path" ]]; then
-          ZSH_SYNTAX_HIGHLIGHT_SCRIPT="$highlight_path"
-      fi
-    fi
-    ;;
-  Linux)
-    # Linux: 通过 apt 等包管理器安装的标准路径
-    if [[ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
-      ZSH_SYNTAX_HIGHLIGHT_SCRIPT="/usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-    fi
-    ;;
-esac
+# ------------------------------------------------------------------------------
+# 插件管理 (zsh_unplugged)
+# ------------------------------------------------------------------------------
+# 插件存储目录（遵循 XDG 规范）
+ZPLUGINDIR=${ZPLUGINDIR:-${ZDOTDIR:-$HOME/.config/zsh}/plugins}
 
-
-if [[ -n "$ZSH_SYNTAX_HIGHLIGHT_SCRIPT" ]]; then
-  source "$ZSH_SYNTAX_HIGHLIGHT_SCRIPT"
-  unset ZSH_SYNTAX_HIGHLIGHT_SCRIPT # 使用后立即清理，只保留这一处
+# 克隆并加载 zsh_unplugged（首次运行时自动下载）
+if [[ ! -d $ZPLUGINDIR/zsh_unplugged ]]; then
+  git clone --quiet https://github.com/mattmc3/zsh_unplugged $ZPLUGINDIR/zsh_unplugged
 fi
+source $ZPLUGINDIR/zsh_unplugged/zsh_unplugged.zsh
+
+# 插件列表
+repos=(
+  # 语法高亮
+  'zsh-users/zsh-syntax-highlighting'
+  # 自动建议
+  'zsh-users/zsh-autosuggestions'
+  # 历史搜索（可选，与你现有配置兼容）
+  'zsh-users/zsh-history-substring-search'
+  # 其他你需要的插件（例如：fzf 集成、目录跳转增强等）
+  'Aloxaf/fzf-tab'  # 补全界面美化
+  "jeffreytse/zsh-vi-mode"
+)
+
+# 加载所有插件
+plugin-load $repos
+
+# Starship: 跨平台的终端提示符
+if type starship &>/dev/null; then
+  eval "$(starship init zsh)"
+fi
+
+
 
 # kiro: Kiro 终端集成
 [[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
