@@ -68,11 +68,6 @@ if type starship &>/dev/null; then
   eval "$(starship init zsh)"
 fi
 
-
-
-# kiro: Kiro 终端集成
-[[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
-
 # ------------------------------------------------------------------------------
 # 4. 自定义别名 & 函数 (Aliases & Functions)
 # ------------------------------------------------------------------------------
