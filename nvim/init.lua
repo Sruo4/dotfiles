@@ -28,6 +28,9 @@ vim.opt.wrap = false
 vim.opt.scrolloff = 8
 vim.opt.sidescrolloff = 8
 vim.opt.colorcolumn = "100"
+-- 代码折叠设置
+vim.opt.foldmethod = "indent"
+vim.opt.foldenable = false
 
 -- 搜索行为设置
 -- 搜索时忽略大小写
