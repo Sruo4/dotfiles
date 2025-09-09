@@ -27,6 +27,19 @@ fi
 autoload -Uz compinit
 compinit -i
 
+# 历史记录配置
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt HIST_EXPIRE_DUPS_FIRST   # 优先删除重复的旧记录
+setopt HIST_IGNORE_DUPS         # 不记录相邻的重复命令
+setopt HIST_IGNORE_ALL_DUPS     # 删除历史中所有重复的命令
+setopt HIST_FIND_NO_DUPS        # 搜索历史时，显示最近的唯一条目
+setopt HIST_IGNORE_SPACE        # 忽略以空格开头的命令
+setopt HIST_SAVE_NO_DUPS        # 保存历史时，不保存重复的命令
+setopt APPEND_HISTORY           # 立即追加历史，而不是在shell退出时
+setopt SHARE_HISTORY            # 在所有打开的终端间共享历史
+
 
 # ==============================================================
 # 3. 插件管理 (Plugin Management via zsh_unplugged)
@@ -91,9 +104,11 @@ if type fastfetch &>/dev/null; then
   alias ff='fastfetch'
 fi
 
-
-# 目录树展示 (eza替代传统tree)
+# ls 命令现代化 (使用eza)
 if type eza &>/dev/null; then
+  alias ls='eza --icons --git'
+  alias ll='eza --icons --git -l -h --header' # -l: long format, -h: human-readable, --header: show header
+  alias la='eza --icons --git -la' # -a: show hidden files
   alias tree='eza -T'
 fi
 
