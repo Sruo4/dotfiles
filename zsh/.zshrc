@@ -73,6 +73,14 @@ if type starship &>/dev/null; then
   eval "$(starship init zsh)"
 fi
 
+# yazi
+function y() {
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+	yazi "$@" --cwd-file="$tmp"
+	IFS= read -r -d '' cwd < "$tmp"
+	[ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+	rm -f -- "$tmp"
+}
 
 # ==============================================================
 # 5. 自定义别名与函数 (Custom Aliases & Functions)
