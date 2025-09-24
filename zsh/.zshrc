@@ -64,6 +64,7 @@ repos=(
   zsh-users/zsh-history-substring-search  # 历史命令搜索
   Aloxaf/fzf-tab                     # 补全界面美化
   jeffreytse/zsh-vi-mode             # Vi模式支持
+  akash329d/zsh-alias-finder
 )
 
 # 加载所有插件
@@ -138,8 +139,6 @@ case "$(uname -s)" in
   Darwin) # macOS
     export CLICOLOR=1
     export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd
-    alias ls='ls -G'
-    alias ll='ls -lAhF'
     ;;
   Linux) # WSL2, OrbStack, etc.
     alias ls='ls --color=auto'
