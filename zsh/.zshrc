@@ -66,6 +66,14 @@ repos=(
 # 加载所有插件
 plugin-load $repos
 
+plugin-update() {
+  ZPLUGINDIR=${ZPLUGINDIR:-$HOME/.config/zsh/plugins}
+  for d in $ZPLUGINDIR/*/.git(/); do
+    echo "Updating ${d:h:t}..."
+    command git -C "${d:h}" pull --ff --recurse-submodules --depth 1 --rebase --autostash
+  done
+}
+
 
 # ==============================================================
 # 4. 工具初始化与集成 (Tool Initializations & Integrations)
