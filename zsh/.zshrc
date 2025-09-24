@@ -27,6 +27,9 @@ fi
 autoload -Uz compinit
 compinit -i
 
+# 提升函数嵌套层数上限，以兼容复杂的ZLE插件组合 (如starship, zsh-vi-mode等)
+export FUNCNEST=1000
+
 # 历史记录配置
 HISTFILE=~/.zsh_history
 HISTSIZE=10000
@@ -74,6 +77,12 @@ plugin-update() {
   done
 }
 
+# ==============================================================
+# FZF 官方集成 (Official FZF Integration)
+# ==============================================================
+if type brew &>/dev/null; then
+  source "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
+fi
 
 # ==============================================================
 # 4. 工具初始化与集成 (Tool Initializations & Integrations)
@@ -141,3 +150,32 @@ esac
 # 清屏命令 (更彻底的清屏)
 alias cls="printf \"\033[3J\033[H\033[2J\""
 
+# =============================================================================
+# VI-MODE & FZF 终极解决方案 (The Final Solution via precmd hook)
+# =============================================================================
+_apply_final_vi_fzf_bindings() {
+  # --- 绑定 FZF 功能 ---
+  # 1. 创建包装器
+  fzf_vi_search() { zle fzf-history-widget; }
+  zle -N fzf_vi_search
+
+  # 2. 绑定 vicmd (命令模式)下的 / 和 ? 为 FZF 搜索
+  bindkey -M vicmd '/' fzf_vi_search
+  bindkey -M vicmd '?' fzf_vi_search
+
+  # 3. 绑定 viins (插入模式)下的 Ctrl-R 为 FZF 搜索
+  bindkey -M viins '^R' fzf-history-widget
+
+  # --- 恢复 Vi 原生功能 ---
+  # 4. 绑定 vicmd (命令模式)下的 Ctrl-R 为 redo
+  #    根据 `zle -l` 的输出，正确的 widget 名称是 `redo`
+  bindkey -M vicmd '^R' redo # <--- 这里是唯一的修改！
+
+  # --- 执行一次后自我移除，避免重复执行 ---
+  precmd_functions=(${precmd_functions[@]:#_apply_final_vi_fzf_bindings})
+}
+
+# 将函数添加到 precmd 钩子数组中，等待 Shell 准备就绪后执行
+precmd_functions+=(_apply_final_vi_fzf_bindings)
+export EDITOR="nvim"
+export VISUAL="nvim"
