@@ -94,6 +94,10 @@ if type starship &>/dev/null; then
   eval "$(starship init zsh)"
 fi
 
+if type thefuck &>/dev/null; then
+    eval $(thefuck --alias)
+fi
+
 # yazi
 function y() {
 	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
