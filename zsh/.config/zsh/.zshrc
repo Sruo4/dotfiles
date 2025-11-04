@@ -43,6 +43,9 @@ setopt HIST_SAVE_NO_DUPS        # 保存历史时，不保存重复的命令
 setopt APPEND_HISTORY           # 立即追加历史，而不是在shell退出时
 setopt SHARE_HISTORY            # 在所有打开的终端间共享历史
 
+# 启用交互式注释功能，方便粘贴带注释的命令
+setopt INTERACTIVE_COMMENTS
+
 
 # ==============================================================
 # 3. 插件管理 (Plugin Management via zsh_unplugged)
@@ -77,6 +80,9 @@ plugin-update() {
     command git -C "${d:h}" pull --ff --recurse-submodules --depth 1 --rebase --autostash
   done
 }
+
+# 插件配置
+ZSH_HIGHLIGHT_STYLES[comment]='fg=244'
 
 # ==============================================================
 # FZF 官方集成 (Official FZF Integration)
@@ -129,7 +135,7 @@ fi
 # ls 命令现代化 (使用eza)
 if type eza &>/dev/null; then
   alias ls='eza --icons --git'
-  alias ll='eza --icons --git -l -h --header' # -l: long format, -h: human-readable, --header: show header
+  alias ll='eza --icons --git -la -h --header' # -l: long format, -h: human-readable, --header: show header
   alias la='eza --icons --git -la' # -a: show hidden files
   alias tree='eza -T'
 fi
