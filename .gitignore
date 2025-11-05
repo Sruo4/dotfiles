@@ -8,3 +8,12 @@
 *.bak
 *.backup
 *~
+
+# Runtime caches
+vim/
+
+# ZSH completion caches
+.zcompdump
+.zcompcache/
+**/.zcompcache/
+**/.zcompdump

@@ -18,6 +18,20 @@ fi
 # 2. Zsh核心功能配置 (Zsh Core Configuration)
 # ==============================================================
 
+# 缓存目录 (用于 .zcompdump, .zcompcache 等)
+export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+if [[ ! -d "$ZSH_CACHE_DIR" ]]; then
+  mkdir -p "$ZSH_CACHE_DIR"
+fi
+
+# 历史记录文件
+export HISTFILE="${XDG_DATA_HOME:-$HOME/.local/share}/zsh/history"
+export HISTSIZE=10000
+export SAVEHIST=10000
+
+# 3. 补全缓存文件路径
+ZCOMPDUMP="${ZSH_CACHE_DIR}/.zcompdump-${ZSH_VERSION}"
+
 # 如果 Homebrew 存在，将其补全路径添加到 FPATH (主要用于 macOS)
 if type brew &>/dev/null; then
   FPATH="$(brew --prefix)/share/zsh-completions:$FPATH"
@@ -31,9 +45,7 @@ compinit -i
 export FUNCNEST=1000
 
 # 历史记录配置
-HISTFILE=~/.zsh_history
-HISTSIZE=10000
-SAVEHIST=10000
+
 setopt HIST_EXPIRE_DUPS_FIRST   # 优先删除重复的旧记录
 setopt HIST_IGNORE_DUPS         # 不记录相邻的重复命令
 setopt HIST_IGNORE_ALL_DUPS     # 删除历史中所有重复的命令
