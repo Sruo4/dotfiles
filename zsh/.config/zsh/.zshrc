@@ -9,8 +9,8 @@ export TERM=xterm-256color
 
 # 加载私密配置（API密钥等敏感信息）
 # 建议将敏感信息放在~/.zshrc.local，避免提交到版本控制
-if [ -f ~/.zshrc.local ]; then
-  source ~/.zshrc.local
+if [ -f "$ZDOTDIR/.zshrc.local" ]; then
+  source "$ZDOTDIR/.zshrc.local"
 fi
 
 
