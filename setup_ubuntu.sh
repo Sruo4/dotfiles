@@ -8,22 +8,18 @@ echo "🚀 开始更新系统并安装基础依赖..."
 sudo apt update
 sudo apt upgrade -y
 
-# 安装后续步骤必需的工具
-# build-essential: 包含 make, gcc 等编译工具
-# git: 用于克隆您的dotfiles仓库
-# curl: 用于下载starship安装脚本
-# software-properties-common: 提供 add-apt-repository 命令
-sudo apt install -y build-essential git curl software-properties-common
+# build-essential: 编译工具
+# git: 克隆dotfiles
+# curl: 下载starship
+# software-properties-common: add-apt-repository
+# stow: 链接 dotfiles (你的核心工具)
+# zsh: 你的目标 shell
+sudo apt install -y build-essential git curl software-properties-common stow zsh
 
 echo "✅ 基础依赖安装完成。"
 
-# --- 2. 安装 Zsh 和 Starship ---
-echo "🚀 正在安装 Zsh..."
-sudo apt install -y zsh
-echo "✅ Zsh 安装完成。"
-
+# --- 2. 安装 Starship ---
 echo "🚀 正在安装 Starship..."
-# 使用 -y 参数使其在脚本中非交互式运行
 curl -sS https://starship.rs/install.sh | sh -s -- -y
 echo "✅ Starship 安装完成。"
 
@@ -34,52 +30,61 @@ sudo add-apt-repository ppa:neovim-ppa/unstable -y
 
 echo "🚀 正在更新软件源并安装 Neovim 及其依赖..."
 sudo apt update
-# ripgrep, unzip, xclip 是常见的nvim插件依赖
-# neovim 本体
 sudo apt install -y ripgrep unzip xclip neovim
 echo "✅ Neovim 安装完成。"
 
 
 # --- 4. 克隆 dotfiles 配置仓库 ---
-# 将您的配置文件克隆到家目录下的一个隐藏文件夹中，这是常见的做法
+# 使用你脚本中的路径
+DOTFILES_DIR="$HOME/.dotfiles"
+
 echo "🚀 正在从 GitHub 克隆您的 dotfiles..."
-# 如果 ~/.dotfiles 目录已存在，先移除，避免 git clone 失败
-if [ -d "$HOME/.dotfiles" ]; then
-    echo "⚠️  发现已存在的 ~/.dotfiles 目录，将进行备份并重新克隆..."
-    mv "$HOME/.dotfiles" "$HOME/.dotfiles.bak.$(date +%F-%T)"
+if [ -d "$DOTFILES_DIR" ]; then
+    echo "⚠️  发现已存在的 $DOTFILES_DIR 目录，将进行备份并重新克隆..."
+    mv "$DOTFILES_DIR" "$DOTFILES_DIR.bak.$(date +%F-%T)"
 fi
-git clone https://github.com/Sruo4/dotfiles.git "$HOME/.dotfiles"
-echo "✅ Dotfiles 已克隆至 ~/.dotfiles"
+git clone https://github.com/Sruo4/dotfiles.git "$DOTFILES_DIR"
+echo "✅ Dotfiles 已克隆至 $DOTFILES_DIR"
 
 
-# --- 5. 应用配置 ---
-echo "🚀 正在配置 Zsh 和 Starship..."
-# 将 starship 的初始化命令添加到 .zshrc 的末尾
-# 如果文件不存在，这行命令会自动创建它
-echo 'eval "$(starship init zsh)"' >> "$HOME/.zshrc"
-echo "✅ Starship 已配置到 .zshrc。"
+# --- 5. 【关键】使用 Stow 自动链接配置 ---
+echo "🚀 正在使用 stow 自动链接您的 XDG 配置..."
 
-# --- 注意：应用您自己的 dotfiles ---
-# 您的 dotfiles 仓库可能需要一个安装脚本或手动创建符号链接 (symlink)
-# 例如: ln -s ~/.dotfiles/nvim ~/.config/nvim
-# 这一步需要您根据自己的仓库结构来决定，因此脚本中未包含具体操作。
-echo "🔔 请注意：脚本已完成软件安装和基础配置。"
-echo "接下来，您需要手动进入 ~/.dotfiles 目录，并按照您自己的方式来应用这些配置（例如，运行安装脚本或创建符号链接）。"
+# 切换到 dotfiles 目录，这是 stow 运行的上下文
+cd "$DOTFILES_DIR"
+
+# 确保 XDG 规范的 .config 目录存在
+mkdir -p "$HOME/.config"
+
+# 1. 链接根目录文件 (如 .zshenv)
+#    -t $HOME: 目标目录是家目录
+#    这会链接: $DOTFILES_DIR/zshenv/.zshenv -> $HOME/.zshenv
+echo "I> 正在链接 'zshenv'到 $HOME..."
+stow -R -t "$HOME" zshenv
+
+# 2. 链接 XDG 配置
+#    -t $HOME/.config: 目标目录是 .config
+#    这会链接: $DOTFILES_DIR/nvim -> $HOME/.config/nvim
+#             $DOTFILES_DIR/zsh  -> $HOME/.config/zsh
+#             ...等等
+echo "I> 正在链接 XDG 配置到 $HOME/.config..."
+# (我们跳过了 mac 专属的 aerospace, brewfile, hammerspoon)
+stow -R -t "$HOME/.config" git nvim starship zellij zsh
+
+echo "✅ Dotfiles 链接完成。"
 
 
 # --- 6. 更改默认 Shell 为 Zsh ---
-# 检查 Zsh 是否已在 /etc/shells 中
 if ! grep -q "$(which zsh)" /etc/shells; then
   echo "🚀 将 Zsh 添加到允许的 shells 列表中..."
   which zsh | sudo tee -a /etc/shells
 fi
 
 echo "🚀 正在将默认 Shell 更改为 Zsh..."
-# 这条命令会提示您输入密码
 chsh -s "$(which zsh)"
 echo "✅ 默认 Shell 已设置为 Zsh。"
 
 
 # --- 完成 ---
 echo "🎉 全部完成！"
-echo "请完全退出终端或重启您的计算机，以使 Zsh 成为您的默认 Shell。"
+echo "请完全退出终端或重启您的 OrbStack 镜像，以使 Zsh 成为您的默认 Shell。"
