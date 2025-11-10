@@ -25,7 +25,14 @@ if [[ ! -d "$ZSH_CACHE_DIR" ]]; then
 fi
 
 # 历史记录文件
-export HISTFILE="${XDG_DATA_HOME:-$HOME/.local/share}/zsh/history"
+ZSH_DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zsh"
+if [[ ! -d "$ZSH_DATA_DIR" ]]; then
+  mkdir -p "$ZSH_DATA_DIR"
+fi
+export HISTFILE="${ZSH_DATA_DIR}/history"
+if [[ ! -f "$HISTFILE" ]]; then
+  : >| "$HISTFILE"
+fi
 export HISTSIZE=10000
 export SAVEHIST=10000
 
@@ -39,7 +46,7 @@ fi
 
 # 初始化 Zsh 自动补全系统
 autoload -Uz compinit
-compinit -i
+compinit -i -d "$ZCOMPDUMP"
 
 # 提升函数嵌套层数上限，以兼容复杂的ZLE插件组合 (如starship, zsh-vi-mode等)
 export FUNCNEST=1000
