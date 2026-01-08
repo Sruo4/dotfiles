@@ -17,3 +17,15 @@ vim/
 .zcompcache/
 **/.zcompcache/
 **/.zcompdump
+
+# Claude local settings
+.claude/
+
+# ZSH session files
+**/.zsh_sessions/
+
+# ZSH third-party plugins (managed by zsh_unplugged)
+**/plugins/
+
+# Neovim lazy.nvim lock file
+**/lazy-lock.json
