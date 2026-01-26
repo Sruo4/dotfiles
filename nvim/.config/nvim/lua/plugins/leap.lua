@@ -1,4 +1,4 @@
-return {  
-  'ggandor/leap.nvim',  
-  dependencies = {'tpope/vim-repeat'},  
+return {
+  url = 'https://codeberg.org/andyg/leap.nvim',
+  dependencies = {'tpope/vim-repeat'},
 }
