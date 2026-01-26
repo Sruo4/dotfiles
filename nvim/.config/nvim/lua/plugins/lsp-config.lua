@@ -29,10 +29,14 @@ return {
                 local opts = { buffer = ev.buf }
                 vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
                 vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-                vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
                 vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
                 vim.keymap.set('n', '<C-k>', vim.lsp.buf.signature_help, opts)
-                vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+
+                -- LspUI mappings
+                vim.keymap.set('n', 'K', '<cmd>LspUI hover<CR>', opts)
+                vim.keymap.set('n', 'gr', '<cmd>LspUI reference<CR>', opts)
+                vim.keymap.set('n', '<leader>rn', '<cmd>LspUI rename<CR>', { buffer = ev.buf, desc = '重命名符号' })
+                vim.keymap.set('n', '<leader>ca', '<cmd>LspUI code_action<CR>', { buffer = ev.buf, desc = '代码操作' })
             end,
         })
     end

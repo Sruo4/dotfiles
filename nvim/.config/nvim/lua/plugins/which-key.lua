@@ -70,8 +70,8 @@ return {
             -- LSP分组
             { "<leader>l", group = "LSP" },
             { "<leader>ld", vim.diagnostic.open_float, desc = "显示诊断" },
-            { "<leader>lr", vim.lsp.buf.rename, desc = "重命名" },
-            { "<leader>la", vim.lsp.buf.code_action, desc = "代码操作" },
+            { "<leader>lr", "<cmd>LspUI rename<CR>", desc = "重命名" },
+            { "<leader>la", "<cmd>LspUI code_action<CR>", desc = "代码操作" },
             { "<leader>lf", function() vim.lsp.buf.format { async = true } end, desc = "格式化" },
             { "<leader>ls", "<cmd>Telescope lsp_document_symbols<CR>", desc = "文档符号" },
             { "<leader>lS", "<cmd>Telescope lsp_dynamic_workspace_symbols<CR>", desc = "工作区符号" },
