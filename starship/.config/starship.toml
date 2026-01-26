@@ -1,0 +1,7 @@
+# Increase to reduce scan timeout warnings on large repos.
+scan_timeout = 1000
+
+[custom.jj]
+when = "command -v jj-starship >/dev/null 2>&1 && jj-starship detect"
+command = "jj-starship prompt"
+format = "$output "

@@ -4,13 +4,21 @@
 # 1. 环境变量 & 私密配置 (Environment Variables & Secrets)
 # ------------------------------------------------------------------------------
 
-# 为现代终端设置256色支持
-export TERM=xterm-256color
+# 为现代终端设置256色支持（不强行覆盖已有 TERM）
+export TERM="${TERM:-xterm-256color}"
+
+# Zsh 配置目录（优先遵循 ZDOTDIR；否则按 XDG 默认）
+ZSH_DOTDIR="${ZDOTDIR:-$HOME/.config/zsh}"
 
 # 加载私密配置（API密钥等敏感信息）
 # 建议将敏感信息放在~/.zshrc.local，避免提交到版本控制
-if [ -f "$ZDOTDIR/.zshrc.local" ]; then
-  source "$ZDOTDIR/.zshrc.local"
+if [[ -f "$ZSH_DOTDIR/.zshrc.local" ]]; then
+  source "$ZSH_DOTDIR/.zshrc.local"
+fi
+
+# Rust/Cargo 环境配置
+if [ -f "$HOME/.cargo/env" ]; then
+  source "$HOME/.cargo/env"
 fi
 
 
@@ -71,43 +79,54 @@ setopt INTERACTIVE_COMMENTS
 # ==============================================================
 
 # 插件存储目录（遵循XDG规范）
-ZPLUGINDIR=${ZPLUGINDIR:-${ZDOTDIR:-$HOME/.config/zsh}/plugins}
+ZPLUGINDIR=${ZPLUGINDIR:-${ZSH_DOTDIR}/plugins}
 
 # 克隆并加载 zsh_unplugged（首次运行时自动下载）
-if [[ ! -d $ZPLUGINDIR/zsh_unplugged ]]; then
-  git clone --quiet https://github.com/mattmc3/zsh_unplugged $ZPLUGINDIR/zsh_unplugged
+if [[ ! -d "$ZPLUGINDIR/zsh_unplugged" ]]; then
+  if command -v git &>/dev/null; then
+    command git clone --quiet https://github.com/mattmc3/zsh_unplugged "$ZPLUGINDIR/zsh_unplugged" 2>/dev/null || true
+  fi
 fi
-source $ZPLUGINDIR/zsh_unplugged/zsh_unplugged.zsh
+if [[ -f "$ZPLUGINDIR/zsh_unplugged/zsh_unplugged.zsh" ]]; then
+  source "$ZPLUGINDIR/zsh_unplugged/zsh_unplugged.zsh"
 
-# 插件列表
-repos=(
-  zsh-users/zsh-syntax-highlighting  # 语法高亮
-  zsh-users/zsh-autosuggestions      # 命令自动建议
-  zsh-users/zsh-history-substring-search  # 历史命令搜索
-  Aloxaf/fzf-tab                     # 补全界面美化
-  jeffreytse/zsh-vi-mode             # Vi模式支持
-  akash329d/zsh-alias-finder
-)
+  # 插件列表
+  repos=(
+    zsh-users/zsh-autosuggestions      # 命令自动建议
+    Aloxaf/fzf-tab                     # 补全界面美化
+    jeffreytse/zsh-vi-mode             # Vi模式支持
+    akash329d/zsh-alias-finder
+    zsh-users/zsh-history-substring-search  # 历史命令搜索
+    zsh-users/zsh-syntax-highlighting  # 语法高亮
+  )
 
-# 加载所有插件
-plugin-load $repos
+  # 加载所有插件
+  plugin-load $repos
 
-plugin-update() {
-  ZPLUGINDIR=${ZPLUGINDIR:-$HOME/.config/zsh/plugins}
-  for d in $ZPLUGINDIR/*/.git(/); do
-    echo "Updating ${d:h:t}..."
-    command git -C "${d:h}" pull --ff --recurse-submodules --depth 1 --rebase --autostash
-  done
-}
+  plugin-update() {
+    command -v git &>/dev/null || return 0
+    local plugin_dir="${ZPLUGINDIR:-${ZSH_DOTDIR}/plugins}"
+    for d in $plugin_dir/*/.git(/); do
+      echo "Updating ${d:h:t}..."
+      command git -C "${d:h}" pull --ff --recurse-submodules --depth 1 --rebase --autostash
+    done
+  }
 
-# 插件配置
-ZSH_HIGHLIGHT_STYLES[comment]='fg=244'
+  # 插件配置
+  ZSH_HIGHLIGHT_STYLES[comment]='fg=244'
+fi
 
 # ==============================================================
 # FZF 官方集成 (Official FZF Integration)
 # ==============================================================
-if type brew &>/dev/null; then
-  source "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
+if type fzf &>/dev/null; then
+  if type brew &>/dev/null; then
+    source "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
+  elif [[ -f /usr/share/fzf/key-bindings.zsh ]]; then
+    source /usr/share/fzf/key-bindings.zsh
+  elif [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]]; then
+    source /usr/share/doc/fzf/examples/key-bindings.zsh
+  fi
 fi
 
 # ==============================================================
@@ -166,8 +185,10 @@ case "$(uname -s)" in
     export LSCOLORS=ExGxBxDxCxEgEdxbxgxcxd
     ;;
   Linux) # WSL2, OrbStack, etc.
-    alias ls='ls --color=auto'
-    alias ll='ls -alhF --color=auto'
+    if ! type eza &>/dev/null; then
+      alias ls='ls --color=auto'
+      alias ll='ls -alhF --color=auto'
+    fi
     ;;
 esac
 
@@ -186,6 +207,8 @@ _apply_final_vi_fzf_bindings() {
   # 2. 绑定 vicmd (命令模式)下的 / 和 ? 为 FZF 搜索
   bindkey -M vicmd '/' fzf_vi_search
   bindkey -M vicmd '?' fzf_vi_search
+  bindkey -M viins '^I' fzf-tab-complete
+  bindkey -M vicmd '^I' fzf-tab-complete
 
   # 3. 绑定 viins (插入模式)下的 Ctrl-R 为 FZF 搜索
   bindkey -M viins '^R' fzf-history-widget
@@ -203,3 +226,57 @@ _apply_final_vi_fzf_bindings() {
 precmd_functions+=(_apply_final_vi_fzf_bindings)
 export EDITOR="nvim"
 export VISUAL="nvim"
+
+# ==============================================================
+# 6. PATH 与跨平台环境变量 (macOS + Linux)
+# ==============================================================
+
+_path_prepend() {
+  local dir="$1"
+  [[ -n "$dir" && -d "$dir" ]] || return 0
+  case ":$PATH:" in
+    *":$dir:"*) ;;
+    *) export PATH="$dir:$PATH" ;;
+  esac
+}
+
+export PGSERVICEFILE="$HOME/.config/pg/service.conf"
+export PGPASSFILE="$HOME/.config/pg/pgpass"
+
+# Homebrew (macOS only)
+if [[ "$(uname -s)" == "Darwin" ]] && type brew &>/dev/null; then
+  _path_prepend "$(brew --prefix)/opt/postgresql@15/bin"
+  # macOS 自带 /usr/bin/trash；不强行用 Homebrew 版以避免行为差异
+fi
+
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}"
+
+# Homebrew trash（可选）
+# 主要用于交互式手动操作：默认用功能更全的 Homebrew 版，并保留系统版入口。
+if [[ "$(uname -s)" == "Darwin" ]] && [[ -x "/opt/homebrew/opt/trash/bin/trash" ]]; then
+  alias strash="/usr/bin/trash"
+  if [[ -o interactive ]]; then
+    alias trash="/opt/homebrew/opt/trash/bin/trash"
+  fi
+fi
+
+# pnpm (macOS: ~/Library/pnpm, Linux: ~/.local/share/pnpm)
+if [[ -z "${PNPM_HOME:-}" ]]; then
+  if [[ -d "$HOME/Library/pnpm" ]]; then
+    export PNPM_HOME="$HOME/Library/pnpm"
+  elif [[ -d "$HOME/.local/share/pnpm" ]]; then
+    export PNPM_HOME="$HOME/.local/share/pnpm"
+  fi
+fi
+if [[ -n "${PNPM_HOME:-}" ]]; then
+  _path_prepend "$PNPM_HOME"
+fi
+
+# uv
+_path_prepend "$HOME/.local/bin"
+
+# bun completions
+[[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
+
+export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+_path_prepend "$BUN_INSTALL/bin"
