@@ -8,7 +8,8 @@ vim.opt.signcolumn = "yes"
 
 -- 编码和剪贴板设置
 vim.opt.encoding = "utf-8"
-vim.opt.fileencoding = "utf-8"
+-- Avoid E21 when current buffer is not modifiable (e.g. Lazy UI)
+vim.opt_global.fileencoding = "utf-8"
 -- 安全设置剪贴板，避免在某些环境下的错误
 vim.schedule(function()
   pcall(function()
