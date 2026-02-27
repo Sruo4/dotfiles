@@ -1,90 +1,117 @@
 #!/usr/bin/env bash
 
-# 脚本出错时立即退出
 set -e
 
-# --- 1. 系统准备与基础依赖安装 ---
-echo "🚀 开始更新系统并安装基础依赖..."
-sudo apt update
-sudo apt upgrade -y
+# --- Checkpoint 机制 ---
+CHECKPOINT_FILE="$HOME/.setup_ubuntu_checkpoint"
+touch "$CHECKPOINT_FILE"
 
-# build-essential: 编译工具
-# git: 克隆dotfiles
-# curl: 下载starship
-# software-properties-common: add-apt-repository
-# stow: 链接 dotfiles (你的核心工具)
-# zsh: 你的目标 shell
-sudo apt install -y build-essential git curl software-properties-common stow zsh
+step_done() {
+    grep -qxF "$1" "$CHECKPOINT_FILE" 2>/dev/null
+}
 
-echo "✅ 基础依赖安装完成。"
+mark_done() {
+    echo "$1" >> "$CHECKPOINT_FILE"
+}
 
-# --- 2. 安装 Starship ---
-echo "🚀 正在安装 Starship..."
-curl -sS https://starship.rs/install.sh | sh -s -- -y
-echo "✅ Starship 安装完成。"
+# 交互式步骤执行器
+# 用法: run_step <step_id> <description> <function>
+run_step() {
+    local step_id="$1"
+    local desc="$2"
+    local func="$3"
 
+    if step_done "$step_id"; then
+        echo "⏭️  [$step_id] $desc — 已完成，跳过"
+        return 0
+    fi
 
-# --- 3. 安装 Neovim 及其依赖 ---
-echo "🚀 正在添加 Neovim (unstable) PPA..."
-sudo add-apt-repository ppa:neovim-ppa/unstable -y
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📦 [$step_id] $desc"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    read -rp "执行此步骤？[Y/n/q] " answer
+    case "${answer,,}" in
+        n)
+            echo "⏭️  已跳过。"
+            return 0
+            ;;
+        q)
+            echo "👋 已退出安装。下次运行将从此处继续。"
+            exit 0
+            ;;
+        *)
+            "$func"
+            mark_done "$step_id"
+            echo "✅ [$step_id] 完成。"
+            ;;
+    esac
+}
 
-echo "🚀 正在更新软件源并安装 Neovim 及其依赖..."
-sudo apt update
-sudo apt install -y ripgrep unzip xclip neovim
-echo "✅ Neovim 安装完成。"
+# --- 各步骤定义 ---
 
+step_apt_base() {
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt install -y build-essential git curl software-properties-common stow zsh
+}
 
-# --- 4. 克隆 dotfiles 配置仓库 ---
-# 使用你脚本中的路径
-DOTFILES_DIR="$HOME/.dotfiles"
+step_starship() {
+    curl -sS https://starship.rs/install.sh | sh -s -- -y
+}
 
-echo "🚀 正在从 GitHub 克隆您的 dotfiles..."
-if [ -d "$DOTFILES_DIR" ]; then
-    echo "⚠️  发现已存在的 $DOTFILES_DIR 目录，将进行备份并重新克隆..."
-    mv "$DOTFILES_DIR" "$DOTFILES_DIR.bak.$(date +%F-%T)"
-fi
-git clone https://github.com/Sruo4/dotfiles.git "$DOTFILES_DIR"
-echo "✅ Dotfiles 已克隆至 $DOTFILES_DIR"
+step_neovim() {
+    sudo apt install -y ripgrep unzip xclip
+    echo "I> 正在从 GitHub 下载最新稳定版 Neovim..."
+    curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+    sudo rm -rf /opt/nvim-linux-x86_64
+    sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+    rm nvim-linux-x86_64.tar.gz
+    sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+}
 
+step_clone_dotfiles() {
+    DOTFILES_DIR="$HOME/.dotfiles"
+    if [ -d "$DOTFILES_DIR" ]; then
+        echo "⚠️  发现已存在的 $DOTFILES_DIR 目录，将进行备份并重新克隆..."
+        mv "$DOTFILES_DIR" "$DOTFILES_DIR.bak.$(date +%F-%T)"
+    fi
+    git clone https://github.com/Sruo4/dotfiles.git "$DOTFILES_DIR"
+}
 
-# --- 5. 【关键】使用 Stow 自动链接配置 ---
-echo "🚀 正在使用 stow 自动链接您的 XDG 配置..."
+step_stow_dotfiles() {
+    DOTFILES_DIR="$HOME/.dotfiles"
+    cd "$DOTFILES_DIR"
+    mkdir -p "$HOME/.config"
 
-# 切换到 dotfiles 目录，这是 stow 运行的上下文
-cd "$DOTFILES_DIR"
+    echo "I> 正在链接 'zshenv' 到 $HOME..."
+    stow -R -t "$HOME" zshenv
 
-# 确保 XDG 规范的 .config 目录存在
-mkdir -p "$HOME/.config"
+    echo "I> 正在链接 XDG 配置到 $HOME/.config..."
+    stow -R -t "$HOME/.config" git nvim starship zellij zsh
+}
 
-# 1. 链接根目录文件 (如 .zshenv)
-#    -t $HOME: 目标目录是家目录
-#    这会链接: $DOTFILES_DIR/zshenv/.zshenv -> $HOME/.zshenv
-echo "I> 正在链接 'zshenv'到 $HOME..."
-stow -R -t "$HOME" zshenv
+step_change_shell() {
+    if ! grep -q "$(which zsh)" /etc/shells; then
+        echo "🚀 将 Zsh 添加到允许的 shells 列表中..."
+        which zsh | sudo tee -a /etc/shells
+    fi
+    chsh -s "$(which zsh)"
+}
 
-# 2. 链接 XDG 配置
-#    -t $HOME/.config: 目标目录是 .config
-#    这会链接: $DOTFILES_DIR/nvim -> $HOME/.config/nvim
-#             $DOTFILES_DIR/zsh  -> $HOME/.config/zsh
-#             ...等等
-echo "I> 正在链接 XDG 配置到 $HOME/.config..."
-# (我们跳过了 mac 专属的 aerospace, brewfile, hammerspoon)
-stow -R -t "$HOME/.config" git nvim starship zellij zsh
+# --- 执行 ---
 
-echo "✅ Dotfiles 链接完成。"
+echo "🚀 Ubuntu 环境配置脚本"
+echo "   每一步都可选择执行(Y)、跳过(n)、退出(q)"
+echo "   已完成的步骤会自动跳过（重置：rm $CHECKPOINT_FILE）"
 
+run_step "apt_base"       "更新系统并安装基础依赖"          step_apt_base
+run_step "starship"       "安装 Starship 提示符"            step_starship
+run_step "neovim"         "安装 Neovim 及依赖 (unstable PPA)" step_neovim
+run_step "clone_dotfiles" "克隆 dotfiles 配置仓库"          step_clone_dotfiles
+run_step "stow_dotfiles"  "使用 Stow 链接配置文件"          step_stow_dotfiles
+run_step "change_shell"   "更改默认 Shell 为 Zsh"           step_change_shell
 
-# --- 6. 更改默认 Shell 为 Zsh ---
-if ! grep -q "$(which zsh)" /etc/shells; then
-  echo "🚀 将 Zsh 添加到允许的 shells 列表中..."
-  which zsh | sudo tee -a /etc/shells
-fi
-
-echo "🚀 正在将默认 Shell 更改为 Zsh..."
-chsh -s "$(which zsh)"
-echo "✅ 默认 Shell 已设置为 Zsh。"
-
-
-# --- 完成 ---
+echo ""
 echo "🎉 全部完成！"
 echo "请完全退出终端或重启您的 OrbStack 镜像，以使 Zsh 成为您的默认 Shell。"
