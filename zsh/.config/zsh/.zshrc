@@ -4,8 +4,10 @@
 # 1. 环境变量 & 私密配置 (Environment Variables & Secrets)
 # ------------------------------------------------------------------------------
 
-# 为现代终端设置256色支持（不强行覆盖已有 TERM）
-export TERM="${TERM:-xterm-256color}"
+# 如果当前 TERM 的 terminfo 不存在，回退到 xterm-256color
+if ! infocmp "$TERM" &>/dev/null; then
+    export TERM=xterm-256color
+fi
 
 # Zsh 配置目录（优先遵循 ZDOTDIR；否则按 XDG 默认）
 ZSH_DOTDIR="${ZDOTDIR:-$HOME/.config/zsh}"

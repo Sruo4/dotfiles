@@ -62,12 +62,19 @@ step_starship() {
 
 step_neovim() {
     sudo apt install -y ripgrep unzip xclip
-    echo "I> 正在从 GitHub 下载最新稳定版 Neovim..."
-    curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
-    sudo rm -rf /opt/nvim-linux-x86_64
-    sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
-    rm nvim-linux-x86_64.tar.gz
-    sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+
+    local arch
+    case "$(uname -m)" in
+        aarch64|arm64) arch="arm64" ;;
+        *)             arch="x86_64" ;;
+    esac
+
+    echo "I> 正在从 GitHub 下载最新稳定版 Neovim (${arch})..."
+    curl -LO "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${arch}.tar.gz"
+    sudo rm -rf "/opt/nvim-linux-${arch}"
+    sudo tar -C /opt -xzf "nvim-linux-${arch}.tar.gz"
+    rm "nvim-linux-${arch}.tar.gz"
+    sudo ln -sf "/opt/nvim-linux-${arch}/bin/nvim" /usr/local/bin/nvim
 }
 
 step_clone_dotfiles() {
@@ -84,11 +91,8 @@ step_stow_dotfiles() {
     cd "$DOTFILES_DIR"
     mkdir -p "$HOME/.config"
 
-    echo "I> 正在链接 'zshenv' 到 $HOME..."
-    stow -R -t "$HOME" zshenv
-
-    echo "I> 正在链接 XDG 配置到 $HOME/.config..."
-    stow -R -t "$HOME/.config" git nvim starship zellij zsh
+    echo "I> 正在链接配置到 $HOME..."
+    stow -R -t "$HOME" zshenv git nvim starship zellij zsh
 }
 
 step_change_shell() {
