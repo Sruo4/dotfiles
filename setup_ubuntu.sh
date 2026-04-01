@@ -78,7 +78,7 @@ step_neovim() {
 }
 
 step_clone_dotfiles() {
-    DOTFILES_DIR="$HOME/.dotfiles"
+    DOTFILES_DIR="$HOME/dotfiles"
     if [ -d "$DOTFILES_DIR" ]; then
         echo "⚠️  发现已存在的 $DOTFILES_DIR 目录，将进行备份并重新克隆..."
         mv "$DOTFILES_DIR" "$DOTFILES_DIR.bak.$(date +%F-%T)"
@@ -87,7 +87,7 @@ step_clone_dotfiles() {
 }
 
 step_stow_dotfiles() {
-    DOTFILES_DIR="$HOME/.dotfiles"
+    DOTFILES_DIR="$HOME/dotfiles"
     cd "$DOTFILES_DIR"
     mkdir -p "$HOME/.config"
 
